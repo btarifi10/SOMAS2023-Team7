@@ -46,19 +46,22 @@ func (vf *VotingFramework) GetDecision(inputs VoteInputs) Vote {
 }
 
 func (vf *VotingFramework) deliberateVote(voteInputs VoteInputs) Vote {
+	var vote Vote
 	if voteInputs.decisionType == VoteToKickAgent {
 		// TODO: Deliberate on whether to kick an agent
 		fmt.Println("Deliberating on whether to kick an agent")
+		vote = VoteToKickWrapper(voteInputs)
 	} else if voteInputs.decisionType == VoteToAcceptNewAgent {
 		// TODO: Deliberate on whether to accept a new agent
 		fmt.Println("Deliberating on whether to accept a new agent")
 	} else if voteInputs.decisionType == VoteOnProposals {
 		// TODO: Deliberate on how to vote on proposed directions
 		fmt.Println("Deliberating on how to vote on proposals")
+		vote = Vote{result: Map{"decision": true}}
 	} else {
 		// TODO: Deliberate on something else
 		fmt.Println("Deliberating on something else")
+		vote = Vote{result: Map{"decision": true}}
 	}
-
-	return Vote{result: Map{"decision": true}}
+	return vote
 }
