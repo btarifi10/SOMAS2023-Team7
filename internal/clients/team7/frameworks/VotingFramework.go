@@ -10,6 +10,10 @@ type Map map[string]interface{}
 // Define VoteTypes
 type VoteType int
 
+// Type for scoring different votes
+// High value for variables of this type expresses being in favour of vote.
+type ScoreType float64
+
 const (
 	VoteToKickAgent VoteType = iota
 	VoteToAcceptNewAgent
