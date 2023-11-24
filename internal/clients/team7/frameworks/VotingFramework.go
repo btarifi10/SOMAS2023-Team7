@@ -54,6 +54,7 @@ func (vf *VotingFramework) deliberateVote(voteInputs VoteInputs) Vote {
 	} else if voteInputs.decisionType == VoteToAcceptNewAgent {
 		// TODO: Deliberate on whether to accept a new agent
 		fmt.Println("Deliberating on whether to accept a new agent")
+		vote = VoteToAcceptWrapper(voteInputs)
 	} else if voteInputs.decisionType == VoteOnProposals {
 		// TODO: Deliberate on how to vote on proposed directions
 		fmt.Println("Deliberating on how to vote on proposals")
