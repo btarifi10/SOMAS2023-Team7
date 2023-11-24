@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-
-	"github.com/google/uuid"
 )
 
 // This map can hold any type of data as the value
@@ -32,7 +30,6 @@ const (
 	Proportion VoteParameter = iota // Assign a proportion of your vote to each candidate
 	YesNo                           // Say yes or no to each candidate
 	// add new vote parameters as required by the environment
-
 )
 
 type VoteInputs struct {
@@ -71,16 +68,19 @@ func (vf *VotingFramework) deliberateVote(voteInputs VoteInputs) Vote {
 		fmt.Println("Deliberating on whether to kick an agent")
 		vote = VoteToKickWrapper(voteInputs)
 	} else if voteInputs.DecisionType == VoteToAcceptNewAgent {
+	} else if voteInputs.DecisionType == VoteToAcceptNewAgent {
 		// TODO: Deliberate on whether to accept a new agent
 		fmt.Println("Deliberating on whether to accept a new agent")
-		vote = VoteToAcceptWrapper(voteInputs)
-	} else if voteInputs.decisionType == VoteOnProposals {
+		//vote = VoteToAcceptWrapper(voteInputs)
+	} else if voteInputs.DecisionType == VoteOnProposals {
 		// TODO: Deliberate on how to vote on proposed directions
 		fmt.Println("Deliberating on how to vote on proposals")
+		vote = VoteOnAllocationWrapper(voteInputs)
 		vote = VoteOnAllocationWrapper(voteInputs)
 	} else {
 		// TODO: Deliberate on something else
 		fmt.Println("Deliberating on something else")
+		//vote = Vote{result: Map{"decision": true}}
 		//vote = Vote{result: Map{"decision": true}}
 	}
 	return vote
