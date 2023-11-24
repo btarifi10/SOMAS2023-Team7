@@ -1,6 +1,6 @@
 package frameworks
 
-func VoteToAcceptWrapper(voteInputs VoteInputs) Vote {
+/*func VoteToAcceptWrapper(voteInputs VoteInputs) Vote {
 	var vote Map
 	vote_decision := true
 	vote["decision"] = vote_decision
@@ -8,3 +8,4 @@ func VoteToAcceptWrapper(voteInputs VoteInputs) Vote {
 }
 
 // TODO: Add functions for voting to kick an agent off the bike.
+*/
