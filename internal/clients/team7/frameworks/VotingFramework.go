@@ -2,6 +2,8 @@ package frameworks
 
 import (
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 // This map can hold any type of data as the value
@@ -18,16 +20,17 @@ const (
 	VoteToKickAgent VoteType = iota
 	VoteToAcceptNewAgent
 	VoteOnProposals
+	VoteOnAllocation
 )
 
 type VoteInputs struct {
-	decisionType   VoteType       // Type of vote that needs to be made
-	choiceMap      map[string]int // Map of choices [Dummy map for now]
-	voteParameters Map            // Parameters for the vote
+	DecisionType   VoteType    // Type of vote that needs to be made
+	Candidates     []uuid.UUID // Map of choices [Dummy map for now]
+	VoteParameters Map         // Parameters for the vote
 }
 
 type Vote struct {
-	result map[string]interface{}
+	result map[uuid.UUID]interface{}
 }
 
 type VotingFramework struct {
@@ -40,9 +43,9 @@ func NewVotingFramework() *VotingFramework {
 
 func (vf *VotingFramework) GetDecision(inputs VoteInputs) Vote {
 	fmt.Println("VotingFramework: GetDecision called")
-	fmt.Println("VotingFramework: Decision type: ", inputs.decisionType)
-	fmt.Println("VotingFramework: Choice map: ", inputs.choiceMap)
-	fmt.Println("VotingFramework: Vote parameters: ", inputs.voteParameters)
+	fmt.Println("VotingFramework: Decision type: ", inputs.DecisionType)
+	fmt.Println("VotingFramework: Choice map: ", inputs.Candidates)
+	fmt.Println("VotingFramework: Vote parameters: ", inputs.VoteParameters)
 
 	voteResult := vf.deliberateVote(inputs)
 
@@ -51,21 +54,25 @@ func (vf *VotingFramework) GetDecision(inputs VoteInputs) Vote {
 
 func (vf *VotingFramework) deliberateVote(voteInputs VoteInputs) Vote {
 	var vote Vote
-	if voteInputs.decisionType == VoteToKickAgent {
+	if voteInputs.DecisionType == VoteToKickAgent {
 		// TODO: Deliberate on whether to kick an agent
 		fmt.Println("Deliberating on whether to kick an agent")
 		vote = VoteToKickWrapper(voteInputs)
-	} else if voteInputs.decisionType == VoteToAcceptNewAgent {
+	} else if voteInputs.DecisionType == VoteToAcceptNewAgent {
 		// TODO: Deliberate on whether to accept a new agent
 		fmt.Println("Deliberating on whether to accept a new agent")
-	} else if voteInputs.decisionType == VoteOnProposals {
+	} else if voteInputs.DecisionType == VoteOnProposals {
 		// TODO: Deliberate on how to vote on proposed directions
 		fmt.Println("Deliberating on how to vote on proposals")
-		vote = Vote{result: Map{"decision": true}}
+		//vote = Vote{result: Map{"decision": true}}
+	} else if voteInputs.DecisionType == VoteOnAllocation {
+		// TODO: Deliberate on how to vote on proposed directions
+		fmt.Println("Deliberating on how to vote on proposals")
+		vote = VoteOnAllocationWrapper(voteInputs)
 	} else {
 		// TODO: Deliberate on something else
 		fmt.Println("Deliberating on something else")
-		vote = Vote{result: Map{"decision": true}}
+		//vote = Vote{result: Map{"decision": true}}
 	}
 	return vote
 }
