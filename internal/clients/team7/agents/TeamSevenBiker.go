@@ -48,3 +48,7 @@ func (biker *BaseTeamSevenBiker) DecideForce() {
 
 	biker.SetForces(navOutput)
 }
+
+func (biker *BaseTeamSevenBiker) update() {
+
+}
