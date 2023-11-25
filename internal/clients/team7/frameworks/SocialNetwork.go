@@ -24,10 +24,18 @@ type ISocialNetwork[T any] interface {
 	UpdateSocialNetwork(agentIds []uuid.UUID, inputs T)
 	UpdateActiveConnections(agentIds []uuid.UUID)
 	DeactivateConnections(agentIds []uuid.UUID)
+	
+}
+
+type Itrust interface{
+	GetAgentsOnCurrentBike() BaseBiker
+	GetAgentByAgentId(agentId uuid.UUID) []float64
+	GetVotemap() IdVoteMap 
 }
 
 type SocialNetwork struct {
 	ISocialNetwork[SocialConnectionInput]
+	Itrust
 	socialNetwork *map[uuid.UUID]SocialConnection
 }
 
@@ -110,17 +118,12 @@ func (sn *SocialNetwork) GetCurrentBikeNetwork() map[uuid.UUID]SocialConnection 
 
 // Calc_Distribution_penalty calculates the penalty based on resources given
 // and resources requested. This is a method of the SocialNetwork type.
-func (of *SocialNetwork) CalcDistributionPenalty(Resource_Gives, Resource_Requested ResourceAllocationParams) float64 {
-	expected := (1.0 - otherBiker.GetEnergyLevel()) * 0.8 // if agent request more than 80% of their energy they need we have penalty
-	if (otherBiker.GetResourceAllocationParams().myparams - expected >= 0) {
-		return 1 - (otherBiker.GetResourceAllocationParams().myparams - expected)
-	} else {
-		return 1 + math.Abs((otherBiker.GetResourceAllocationParams().myparams - expected)) * 0.5
+func (sn *SocialNetwork) CalcDistributionPenalty(agentid uuid.UUID) float64 {
 
-    return penalty // Return the calculated penalty
+    return 1-GetVotemap()[agentid] // Return the calculated penalty
 }
 
-}
+
 
 func (of *SocialNetwork) CalcPedallingPenalty(agentIds []uuid.UUID) float64 {
 	return (1 - ((1 - agentIds.GetForces().Pedal) * agentIds.energyLevel)) + 0.1
@@ -150,3 +153,4 @@ func (of *SocialNetwork) CalcDifferentLootBoxPenalty(agentIds []uuid.UUID) float
 	}
 	return 0.095
 }
+
