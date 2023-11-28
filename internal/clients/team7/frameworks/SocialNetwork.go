@@ -1,7 +1,9 @@
 package frameworks
 
 import (
+	objects "SOMAS2023/internal/common/objects"
 	"SOMAS2023/internal/common/utils"
+	voting "SOMAS2023/internal/common/voting"
 	"math"
 
 	"github.com/google/uuid"
@@ -10,15 +12,17 @@ import (
 const maxTrustIterations int = 6
 
 type SocialConnection struct {
-	connectionAge      int                         // Number of rounds the agent has been known
-	trustLevels        [maxTrustIterations]float64 // Trust level of the agent, dummy float64 for now.
-	isActiveConnection bool                        // Boolean indicating if connection is on current bike
+	connectionAge      int       // Number of rounds the agent has been known
+	trustLevels        []float64 // Trust level of the agent, dummy float64 for now.
+	isActiveConnection bool      // Boolean indicating if connection is on current bike
 }
 
 type SocialConnectionInput struct {
 	agentDecisions       map[uuid.UUID]utils.Forces
-	agentDistribution    ResourceAllocationParams
+	agentDistribution    objects.ResourceAllocationParams
 	agentLootBoxDecision utils.Colour
+	myId                 uuid.UUID //This is the ID of the agent
+	agentsOnCurrentBike  []objects.IBaseBiker
 }
 
 type ISocialNetwork[T any] interface {
@@ -29,89 +33,85 @@ type ISocialNetwork[T any] interface {
 }
 
 type Itrust interface {
-	GetAgentsOnCurrentBike() BaseBiker
-	GetAgentByAgentId(agentId uuid.UUID) IBaseBiker
-	GetVotemap(agentId uuid.UUID) IdVoteMap //get votes of each individual agent
-	GetcallingAgentId() uuid.UUID
+	GetAgentByAgentId(agentId uuid.UUID) objects.IBaseBiker
+	GetVotemap(agentId uuid.UUID) voting.IdVoteMap //get votes on resouce allocationof each individual agent
 	GetleaderID() uuid.UUID
-	GetProposedTurnangle() utils.TurningDecision
+	GetProposedTurnangle() utils.TurningDecision //this is agreed upon turning angle by the bike i.e direction of lootbox
 	GetAgentscolorByagentID(agentId uuid.UUID) utils.Colour
 }
 
 type SocialNetwork struct {
 	ISocialNetwork[SocialConnectionInput]
 	Itrust
-	socialNetwork *map[uuid.UUID]SocialConnection
+	socialNetwork map[uuid.UUID]*SocialConnection
 	personality   *Personality
 }
 
 func NewSocialNetwork(p *Personality) *SocialNetwork {
 	return &SocialNetwork{
-		socialNetwork: &map[uuid.UUID]SocialConnection{},
+		socialNetwork: map[uuid.UUID]*SocialConnection{},
 		personality:   p,
 	}
 }
 
-func (sn *SocialNetwork) GetSocialNetwork() map[uuid.UUID]SocialConnection {
-	return *sn.socialNetwork
+func (sn *SocialNetwork) GetSocialNetwork() map[uuid.UUID]*SocialConnection {
+	return sn.socialNetwork
 }
 
-func (sn *SocialNetwork) UpdateTrustLevel(agentId uuid.UUID, connection *SocialConnection, Input SocialConnectionInput, p *Personality) {
+func (sn *SocialNetwork) UpdateTrustLevel(agentId uuid.UUID, input SocialConnectionInput, p *Personality) float64 {
 
-	// TODO: Update trust level based on forces
-	agent := sn.GetAgentByAgentId(agentId)
-	DistancePenalty := sn.CalcDistributionPenalty(agentId, sn.Itrust.GetVotemap(agentId), sn.Itrust.GetAgentsOnCurrentBike(), p)
-	PedallingPenalty := sn.CalcPedallingPenalty(agentId, Input[agentId].Pedal, p, sn.Itrust.GetAgentsOnCurrentBike())
-	OrientationPenalty := sn.CalcTurningPenalty(agentId)
-	BrakingPenalty := sn.CalcBrakingPenalty(Input[agentId].Brake)
-	DifferentLootPenalty := sn.CalcDifferentLootBoxPenalty(Input.agentLootBoxDecision, p)
+	DistancePenalty := sn.CalcDistributionPenalty(agentId, sn.Itrust.GetVotemap(agentId), input.agentsOnCurrentBike, p, input.myId)
+	PedallingPenalty := sn.CalcPedallingPenalty(agentId, input.agentDecisions[agentId].Pedal, p, input.agentsOnCurrentBike)
+	OrientationPenalty := sn.CalcTurningPenalty(agentId, input.agentDecisions[agentId].Turning)
+	BrakingPenalty := sn.CalcBrakingPenalty(input.agentDecisions[agentId].Brake)
+	DifferentLootPenalty := sn.CalcDifferentLootBoxPenalty(input.agentLootBoxDecision, p)
 
-	W_dp := 1
-	W_op := 1
-	W_bp := 1
-	W_pp := 1
-	W_dlp := 1
+	W_dp := 1.0
+	W_op := 1.0
+	W_bp := 1.0
+	W_pp := 1.0
+	W_dlp := 1.0
 
 	// Calculate the new trust level
 	trust := (W_dp * DistancePenalty) + (W_pp * PedallingPenalty) + (W_op * OrientationPenalty) + (W_bp * BrakingPenalty) + (W_dlp * DifferentLootPenalty)
 
-	// Update the trust levels slice
-	connection.TrustLevels = append(connection.TrustLevels[1:], trust)
+	newTrustLevels := append((sn.socialNetwork)[agentId].trustLevels[1:], trust)
+	((sn.socialNetwork)[agentId]).trustLevels = newTrustLevels
 
 	return trust
 }
 
-func (sn *SocialNetwork) UpdateSocialNetwork(agentIds []uuid.UUID, inputs SocialConnectionInput) {
+func (sn *SocialNetwork) UpdateSocialNetwork(agentIds []uuid.UUID, inputs SocialConnectionInput, p *Personality) {
 	for _, agentId := range agentIds {
-		connection := (*sn.socialNetwork)[agentId]
+		connection := (sn.socialNetwork)[agentId]
 		connection.connectionAge += 1
-		sn.updateTrustLevel(&connection, inputs[agentId])
-		(*sn.socialNetwork)[agentId] = connection
+		sn.UpdateTrustLevel(agentId, inputs, p)
+		(sn.socialNetwork)[agentId] = connection
 	}
 }
 
 func (sn *SocialNetwork) UpdateActiveConnections(agentIds []uuid.UUID) {
 	for _, agentId := range agentIds {
-		connection := (*sn.socialNetwork)[agentId]
+		connection := (sn.socialNetwork)[agentId]
 		connection.isActiveConnection = true
-		(*sn.socialNetwork)[agentId] = connection
+		(sn.socialNetwork)[agentId] = connection
 	}
 }
 
 func (sn *SocialNetwork) DeactivateConnections(agentIds []uuid.UUID) {
 	for _, agentId := range agentIds {
-		connection := (*sn.socialNetwork)[agentId]
+		connection := (sn.socialNetwork)[agentId]
 		connection.isActiveConnection = false
-		(*sn.socialNetwork)[agentId] = connection
+		(sn.socialNetwork)[agentId] = connection
 	}
 }
 
 // Retrieve agents on the current bike
 func (sn *SocialNetwork) GetCurrentBikeNetwork() map[uuid.UUID]SocialConnection {
 	activeConnections := map[uuid.UUID]SocialConnection{}
-	for agentId, connection := range *sn.socialNetwork {
+	for agentId, connection := range sn.socialNetwork {
 		if connection.isActiveConnection {
-			activeConnections[agentId] = connection
+			activeConnections[agentId] = *connection
 		}
 	}
 	return activeConnections
@@ -121,7 +121,7 @@ func (sn *SocialNetwork) GetCurrentBikeNetwork() map[uuid.UUID]SocialConnection 
 
 // Calc_Distribution_penalty calculates the penalty based on resources given
 // and resources requested. This is a method of the SocialNetwork type.
-func (sn *SocialNetwork) CalcDistributionPenalty(agentId uuid.UUID, resourcedistribution IdVoteMap, bikers []BaseBiker, p *Personality) float64 {
+func (sn *SocialNetwork) CalcDistributionPenalty(agentId uuid.UUID, resourcedistribution voting.IdVoteMap, bikers []objects.IBaseBiker, p *Personality, myid uuid.UUID) float64 {
 	var penalty float64
 	switch {
 	case p.Egalitarian:
@@ -135,7 +135,7 @@ func (sn *SocialNetwork) CalcDistributionPenalty(agentId uuid.UUID, resourcedist
 		}
 	case p.Selfish:
 		for _, agent := range bikers {
-			if agent.GetID() == sn.GetcallingAgentId() {
+			if agent.GetID() == myid {
 				penalty = 1 - resourcedistribution[agent.GetID()]
 			}
 		}
@@ -159,7 +159,7 @@ func (sn *SocialNetwork) CalcDistributionPenalty(agentId uuid.UUID, resourcedist
 
 //Find shift to account for forgiveness
 
-func (sn *SocialNetwork) CalcPedallingPenalty(agentId uuid.UUID, pedalling_force float64, p *Personality, bikers []BaseBiker) float64 {
+func (sn *SocialNetwork) CalcPedallingPenalty(agentId uuid.UUID, pedalling_force float64, p *Personality, bikers []objects.IBaseBiker) float64 {
 	var penalty float64
 	switch {
 	case p.Egalitarian:
@@ -174,24 +174,22 @@ func (sn *SocialNetwork) CalcPedallingPenalty(agentId uuid.UUID, pedalling_force
 		return penalty
 
 	case p.Utilitarian:
-		for _, agent := range bikers {
+		penalty = (1-pedalling_force)*(sn.GetAgentByAgentId(agentId).GetEnergyLevel()) - (math.Pow(pedalling_force, 1.0/pedalling_force))*0.3
+		return penalty
 
-			penalty = ((1 - pedalling_force) * sn.GetAgentByAgentId(agentId).GetEnergyLevel()) - (math.Pow(pedalling_force, 1.0/pedalling_force))*0.3
-			return penalty
-		}
 	}
 
 	return 1 - pedalling_force // Return the calculated penalty
 }
 
-func (sn *SocialNetwork) CalcTurningPenalty(agentId uuid.UUID) float64 {
+func (sn *SocialNetwork) CalcTurningPenalty(agentId uuid.UUID, turning utils.TurningDecision) float64 {
 	if agentId == sn.GetleaderID() {
-		if sn.GetAgentByAgentId(agentId).GetForces.Turning == sn.GetProposedTurnangle() {
+		if turning == sn.GetProposedTurnangle() {
 			return -0.2
 		}
 		return 0.3
 	}
-	if sn.GetAgentByAgentId(agentId).GetForces.Turning == 0 {
+	if turning.SteerBike == true {
 		return -0.2
 	}
 	return 0.5
@@ -201,8 +199,12 @@ func (sn *SocialNetwork) CalcBrakingPenalty(braking float64) float64 {
 	return 0.8
 }
 
-func (sn *SocialNetwork) CalcDifferentLootBoxPenalty(agentIds []uuid.UUID) float64 {
-	if sn.GetAgentscolorByagentID(sn.GetcallingAgentId()) == sn.GetAgentscolorByagentID(sn.GetcallingAgentId()) {
+func (sn *SocialNetwork) CalcDifferentLootBoxPenalty(agentId uuid.UUID, myid uuid.UUID, p *Personality) float64 {
+	switch {
+	case p.Egalitarian:
+		return 0.0
+	}
+	if sn.GetAgentscolorByagentID(agentId) == sn.GetAgentscolorByagentID(myid) {
 		return -0.2
 	}
 	return 0.095
