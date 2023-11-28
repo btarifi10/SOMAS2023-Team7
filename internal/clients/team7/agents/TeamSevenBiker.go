@@ -26,15 +26,15 @@ type BaseTeamSevenBiker struct {
 // Produce new BaseTeamSevenBiker
 func NewBaseTeamSevenBiker(agentId uuid.UUID) *BaseTeamSevenBiker {
 	baseBiker := objects.GetBaseBiker(utils.GenerateRandomColour(), agentId)
+	personality := frameworks.NewDefaultPersonality()
 	return &BaseTeamSevenBiker{
 		BaseBiker:             baseBiker,
 		navigationFramework:   frameworks.NewNavigationDecisionFramework(),
 		bikeDecisionFramework: frameworks.NewBikeDecisionFramework(),
 		opinionFramework:      frameworks.NewOpinionFramework(frameworks.OpinionFrameworkInputs{}),
-		socialNetwork:         frameworks.NewSocialNetwork(),
+		socialNetwork:         frameworks.NewSocialNetwork(personality),
 		votingFramework:       frameworks.NewVotingFramework(),
-		environmentHandler:    frameworks.NewEnvironmentHandler(baseBiker.GetGameState(), baseBiker.GetMegaBikeId(), agentId),
-		personality:           frameworks.NewDefaultPersonality(),
+		environmentHandler:    frameworks.NewEnvironmentHandler(baseBiker.GetGameState(), baseBiker.GetMegaBikeId(), agentId)
 	}
 }
 
