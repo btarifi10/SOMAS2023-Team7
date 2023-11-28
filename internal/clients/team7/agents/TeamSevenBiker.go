@@ -19,36 +19,32 @@ type BaseTeamSevenBiker struct {
 	opinionFramework      *frameworks.OpinionFramework
 	socialNetwork         *frameworks.SocialNetwork
 	votingFramework       *frameworks.VotingFramework
-	environmentHandler    *EnvironmentHandler
-	personality           *Personality
+	environmentHandler    *frameworks.EnvironmentHandler
+	personality           *frameworks.Personality
 }
 
 // Produce new BaseTeamSevenBiker
 func NewBaseTeamSevenBiker(agentId uuid.UUID) *BaseTeamSevenBiker {
 	baseBiker := objects.GetBaseBiker(utils.GenerateRandomColour(), agentId)
+	personality := frameworks.NewDefaultPersonality()
 	return &BaseTeamSevenBiker{
 		BaseBiker:             baseBiker,
 		navigationFramework:   frameworks.NewNavigationDecisionFramework(),
 		bikeDecisionFramework: frameworks.NewBikeDecisionFramework(),
 		opinionFramework:      frameworks.NewOpinionFramework(frameworks.OpinionFrameworkInputs{}),
-		socialNetwork:         frameworks.NewSocialNetwork(),
+		socialNetwork:         frameworks.NewSocialNetwork(personality),
 		votingFramework:       frameworks.NewVotingFramework(),
-		environmentHandler:    NewEnvironmentHandler(baseBiker.GetGameState(), baseBiker.GetMegaBikeId()),
-		personality:           NewDefaultPersonality(),
+		environmentHandler:    frameworks.NewEnvironmentHandler(baseBiker.GetGameState(), baseBiker.GetMegaBikeId(), agentId)
 	}
 }
 
 // Override base biker functions
-func (biker *BaseTeamSevenBiker) DecideForce() {
+func (biker *BaseTeamSevenBiker) DecideForce(direction uuid.UUID) {
 	navInputs := frameworks.NavigationInputs{
-		DesiredLootbox:  biker.NearestLoot(),
+		DesiredLootbox:  biker.environmentHandler.GetNearestLootBox().GetPosition(),
 		CurrentLocation: biker.GetLocation(),
 	}
 	navOutput := biker.navigationFramework.GetDecision(navInputs)
 
 	biker.SetForces(navOutput)
-}
-
-func (biker *BaseTeamSevenBiker) update() {
-
 }
