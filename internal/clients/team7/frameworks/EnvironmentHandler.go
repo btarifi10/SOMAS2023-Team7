@@ -78,7 +78,6 @@ func (env *EnvironmentHandler) GetNearestLootBoxByColour(colour utils.Colour) ob
 			nearestDistance = distance
 		}
 	}
-
 	return nearestLootBox
 }
 
