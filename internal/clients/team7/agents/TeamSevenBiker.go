@@ -50,7 +50,8 @@ func (biker *BaseTeamSevenBiker) DecideForce(direction uuid.UUID) {
 }
 
 /*
-// Ally will update this as soon as the infrastructure is merged!
+We should just wait until the infrastructure team is done to update these. Otherwise
+we may just have to keep editing them time and time again.
 
 // VOTING FUNCTIONS
 func (biker *BaseTeamSevenBiker) DecideJoining(pendingAgents []uuid.UUID) map[uuid.UUID]bool {
