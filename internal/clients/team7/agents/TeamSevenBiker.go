@@ -127,6 +127,21 @@ func (biker *BaseTeamSevenBiker) UpdateAgentInternalState() {
 
 	biker.socialNetwork.UpdateSocialNetwork(agentIds, socialNetworkInput)
 
+	#####################################################################
+	// Initialise the opinion framework
+	opinionInputs := OpinionFrameworkInputs{}
+	opinionFramework := frameworks.NewOpinionFramework(opinionInputs)
+	
+	// Some behavioural data of other agents
+	behaviors := [][]float64{
+		{0.8, 0.6, 0.4, 0.2}, // Example behavior data for an agent
+		{0.5, 0.3, 0.7, 0.9}, // Example behavior data for another agent
+	}
+	
+	// Compute opinions based on behaviours
+	computedOpinions := opinionFramework.ComputeOpinions(behaviors)
+	#####################################################################
+
 	// Update memory
 	if len(biker.locations) < biker.memoryLength {
 		biker.locations = append(biker.locations, biker.GetLocation())
