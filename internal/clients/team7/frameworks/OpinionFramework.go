@@ -19,7 +19,7 @@ func NewOpinionFramework(of OpinionFrameworkInputs) *OpinionFramework {
 	return &OpinionFramework{Inputs: &of}
 }
 
-func (of *OpinionFramework) GetOpinion() float64 {
+func (of *OpinionFramework) GetOpinion(inputs OpinionFrameworkInputs) float64 {
 
 	i := len(of.Inputs.AgentOpinion)
 	μ := of.Inputs.Mindset
