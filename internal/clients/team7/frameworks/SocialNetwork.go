@@ -125,6 +125,13 @@ func (sn *SocialNetwork) updateTrustLevels(input SocialNetworkUpdateInput) {
 			updatedTrust += (W_dp * DistributionPenaltyMap[agentId])
 		}
 
+		if updatedTrust > 1 {
+			updatedTrust = 1
+		}
+		if updatedTrust < 0 {
+			updatedTrust = 0
+		}
+
 		trustLevels := sn.socialNetwork[agentId].trustLevels
 		if len(trustLevels) < maxTrustIterations {
 			trustLevels = append(trustLevels, updatedTrust)
