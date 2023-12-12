@@ -127,6 +127,19 @@ func (biker *BaseTeamSevenBiker) UpdateAgentInternalState() {
 
 	biker.socialNetwork.UpdateSocialNetwork(agentIds, socialNetworkInput)
 
+	// Example usage
+	opinionInputs := frameworks.OpinionFrameworkInputs{
+		AgentOpinion: map[uuid.UUID]float64{
+			uuid.New(): 0.7,
+			uuid.New(): 0.3,
+		},
+		Mindset: 0.5,
+	}
+
+	opinionFramework := frameworks.NewOpinionFramework(opinionInputs)
+	opinionOutputs := opinionFramework.GetOpinion()
+	fmt.Println(opinionOutputs)
+
 	// Update memory
 	if len(biker.locations) < biker.memoryLength {
 		biker.locations = append(biker.locations, biker.GetLocation())
