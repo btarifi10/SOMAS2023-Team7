@@ -142,11 +142,15 @@ func (biker *BaseTeamSevenBiker) UpdateAgentInternalState() {
 
 	// Get the agents' votes on allocation. At this point we are just trusting what they say to be true for now.
 	agentResourceVotes := make(map[uuid.UUID]voting.IdVoteMap)
-	for _, msg := range biker.voteAllocationMessages {
-		agentResourceVotes[msg.GetSender().GetID()] = msg.VoteMap
+	if biker.votedForResources {
+		for _, msg := range biker.voteAllocationMessages {
+			agentResourceVotes[msg.GetSender().GetID()] = msg.VoteMap
+		}
+		biker.votedForResources = false
 	}
 
 	socialNetworkInput := frameworks.SocialNetworkUpdateInput{
+		AgentIds:           agentIds,
 		AgentDecisions:     agentForces,
 		AgentResourceVotes: agentResourceVotes,
 		AgentEnergyLevels:  agentEnergyLevels,
@@ -309,19 +313,17 @@ func (biker *BaseTeamSevenBiker) getDesiredLootboxId() uuid.UUID {
 
 // TODO: Implement a strategy for choosing the final vote
 func (biker *BaseTeamSevenBiker) FinalDirectionVote(proposals map[uuid.UUID]uuid.UUID) voting.LootboxVoteMap {
-	votes := make(voting.LootboxVoteMap)
-	totOptions := len(proposals)
-	normalDist := 1.0 / float64(totOptions)
-	for _, proposal := range proposals {
-		if val, ok := votes[proposal]; ok {
-			votes[proposal] = val + normalDist
-		} else {
-			votes[proposal] = normalDist
-		}
-	}
+	myDesired := biker.getDesiredLootboxId()
 
-	biker.voteDirectionMap = votes
-	return votes
+	voteInputs := frameworks.VoteOnLootBoxesInput{
+		LootBoxCandidates: proposals,
+		MyPersonality:     biker.personality,
+		MyDesired:         myDesired,
+		MyOpinion:         biker.currentOpinionsOfLootboxes,
+	}
+	voteHandler := frameworks.NewVoteOnProposalsHandler()
+	voteOutput := voteHandler.GetDecision(voteInputs)
+	return voteOutput
 }
 
 // Override base biker functions
@@ -336,10 +338,11 @@ func (biker *BaseTeamSevenBiker) DecideForce(direction uuid.UUID) {
 	}
 
 	navInputs := frameworks.NavigationInputs{
-		IsDestination:   proposedLootbox != nil,
-		Destination:     proposedLocation,
-		CurrentLocation: biker.GetLocation(),
-		CurrentEnergy:   biker.GetEnergyLevel(),
+		IsDestination:          proposedLootbox != nil,
+		Destination:            proposedLocation,
+		CurrentLocation:        biker.GetLocation(),
+		CurrentEnergy:          biker.GetEnergyLevel(),
+		ConscientiousnessLevel: biker.personality.Conscientiousness,
 	}
 
 	proposedDirection := biker.navigationFramework.GetTurnAngle(navInputs)
@@ -407,6 +410,7 @@ func (biker *BaseTeamSevenBiker) DecideAllocation() voting.IdVoteMap {
 
 	voteInputs := frameworks.VoteOnAllocationInput{
 		AgentCandidates: agentIds,
+		MyPersonality:   biker.personality,
 		MyId:            biker.GetID(),
 	}
 
@@ -483,32 +487,39 @@ func (biker *BaseTeamSevenBiker) QueryReputation(agentId uuid.UUID) float64 {
 // This function updates all the messages for that agent i.e. both sending and receiving.
 // And returns the new messages from other agents to your agent
 func (biker *BaseTeamSevenBiker) GetAllMessages([]objects.IBaseBiker) []messaging.IMessage[objects.IBaseBiker] {
+
 	messages := make([]messaging.IMessage[objects.IBaseBiker], 0)
 
 	// Get all the trust levels of the agents on the bike
 	trustLevels := biker.socialNetwork.GetCurrentTrustLevels()
-	for agentId, trustLevel := range trustLevels {
-		reputationMessage := biker.CreateReputationMessage(agentId, trustLevel)
-		messages = append(messages, reputationMessage)
 
-		kickoutMessage := biker.CreatekickoutMessage(agentId, false)
-		if trustLevel < 0.2 {
-			kickoutMessage = biker.CreatekickoutMessage(agentId, true)
+	// Low extraversion => Less likely to send a message
+	// High extraversion => More likely to send a message
+	randNum := rand.Float64()
+	if biker.personality.Extraversion > randNum {
+		for agentId, trustLevel := range trustLevels {
+			reputationMessage := biker.CreateReputationMessage(agentId, trustLevel)
+			messages = append(messages, reputationMessage)
+
+			kickoutMessage := biker.CreatekickoutMessage(agentId, false)
+			if trustLevel < 0.2 {
+				kickoutMessage = biker.CreatekickoutMessage(agentId, true)
+			}
+			messages = append(messages, kickoutMessage)
 		}
-		messages = append(messages, kickoutMessage)
+
+		voteKickoutMessage := biker.CreateVotekickoutMessage()
+		messages = append(messages, voteKickoutMessage)
+
+		voteDirectionMessage := biker.CreateVoteLootboxDirectionMessage()
+		messages = append(messages, voteDirectionMessage)
+
+		forcesMessage := biker.CreateForcesMessage()
+		messages = append(messages, forcesMessage)
+
+		voteAllocationMessage := biker.CreateVoteAllocationMessage()
+		messages = append(messages, voteAllocationMessage)
 	}
-
-	voteKickoutMessage := biker.CreateVotekickoutMessage()
-	messages = append(messages, voteKickoutMessage)
-
-	voteDirectionMessage := biker.CreateVoteLootboxDirectionMessage()
-	messages = append(messages, voteDirectionMessage)
-
-	forcesMessage := biker.CreateForcesMessage()
-	messages = append(messages, forcesMessage)
-
-	voteAllocationMessage := biker.CreateVoteAllocationMessage()
-	messages = append(messages, voteAllocationMessage)
 
 	return messages
 }
