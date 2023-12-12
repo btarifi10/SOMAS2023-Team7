@@ -548,7 +548,7 @@ func (biker *BaseTeamSevenBiker) CreateForcesMessage() objects.ForcesMessage {
 	// Low agreeableness => Uncooperative => More likely to lie about forces.
 	// High agreeableness => Cooperative => Less likely to lie about forces.
 	randNum := rand.Float64()
-	if biker.personality.Conscientiousness < randNum {
+	if biker.personality.Agreeableness < randNum {
 		return objects.ForcesMessage{
 			BaseMessage: messaging.CreateMessage[objects.IBaseBiker](biker, biker.GetFellowBikers()),
 			AgentId:     biker.GetID(),
