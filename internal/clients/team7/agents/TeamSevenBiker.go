@@ -562,11 +562,11 @@ func (biker *BaseTeamSevenBiker) CreateVoteLootboxDirectionMessage() objects.Vot
 }
 
 func (biker *BaseTeamSevenBiker) CreateVotekickoutMessage() objects.VoteKickoutMessage {
-	// Low conscientiousness => Unethical => More likely to lie about voting to kick off agent.
-	// Low conscientiousness => Dependable => Less likely to lie about voting to kick off agent.
+	// Low agreeableness => Uncooperative => More likely to lie about voting to kick off agent.
+	// High agreeableness => Cooperative => Less likely to lie about voting to kick off agent.
 	voteKickingMapMessage := biker.voteKickingMap
 	randNum := rand.Float64()
-	if biker.personality.Conscientiousness < randNum {
+	if biker.personality.Agreeableness < randNum {
 		for agentId, vote := range biker.voteKickingMap {
 			if vote == 1 {
 				voteKickingMapMessage[agentId] = 0

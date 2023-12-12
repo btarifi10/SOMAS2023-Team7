@@ -6,10 +6,11 @@ import (
 )
 
 type NavigationInputs struct {
-	IsDestination   bool
-	Destination     utils.Coordinates
-	CurrentLocation utils.Coordinates
-	CurrentEnergy   float64
+	IsDestination           bool
+	Destination             utils.Coordinates
+	CurrentLocation         utils.Coordinates
+	CurrentEnergy           float64
+	ConscientioussnessLevel float64
 }
 
 /*
@@ -33,10 +34,12 @@ func (ndf *NavigationDecisionFramework) GetDecision(inputs NavigationInputs) uti
 	turningInput := utils.TurningDecision{SteerBike: true, SteeringForce: turningForce}
 
 	// Constant ratio for pedaling force based on the current energy level
-	const PedalingEfficiencyConstant float64 = 0.8 // This value can be adjusted
+	// Low consc. => Not hard-working => More likely to have low pedal effort.
+	// High consc. => Hard-working => Less likely to pedal to have low pedal effort.
+	forceToEnergyLevelRatio := inputs.ConscientioussnessLevel // This value can be adjusted
 
 	// Pedaling force is the current energy multiplied by a constant ratio
-	pedallingForce := inputs.CurrentEnergy * PedalingEfficiencyConstant
+	pedallingForce := inputs.CurrentEnergy * forceToEnergyLevelRatio
 
 	// Braking force is set to zero, assuming no need to brake in this context
 	brakingForce := float64(0)
